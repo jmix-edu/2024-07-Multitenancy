@@ -6,8 +6,11 @@ import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.textfield.PasswordField;
 import com.vaadin.flow.router.Route;
 import io.jmix.core.EntityStates;
+import io.jmix.flowui.component.combobox.JmixComboBox;
 import io.jmix.flowui.component.textfield.TypedTextField;
+import io.jmix.flowui.model.InstanceContainer;
 import io.jmix.flowui.view.*;
+import io.jmix.multitenancyflowui.MultitenancyUiSupport;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
@@ -36,10 +39,15 @@ public class UserDetailView extends StandardDetailView<User> {
     private MessageBundle messageBundle;
     @Autowired
     private PasswordEncoder passwordEncoder;
+    @ViewComponent
+    private JmixComboBox<String> tenantField;
+    @Autowired
+    private MultitenancyUiSupport multitenancyUiSupport;
 
     @Subscribe
     public void onInit(final InitEvent event) {
         timeZoneField.setItems(List.of(TimeZone.getAvailableIDs()));
+        tenantField.setItems(multitenancyUiSupport.getTenantOptions());
     }
 
     @Subscribe
@@ -47,6 +55,8 @@ public class UserDetailView extends StandardDetailView<User> {
         usernameField.setReadOnly(false);
         passwordField.setVisible(true);
         confirmPasswordField.setVisible(true);
+        
+        tenantField.setReadOnly(false);
     }
 
     @Subscribe
@@ -70,4 +80,15 @@ public class UserDetailView extends StandardDetailView<User> {
             getEditedEntity().setPassword(passwordEncoder.encode(passwordField.getValue()));
         }
     }
+
+    @Subscribe(id = "userDc", target = Target.DATA_CONTAINER)
+    public void onUserDcItemPropertyChange(final InstanceContainer.ItemPropertyChangeEvent<User> event) {
+        if ("tenant".equals(event.getProperty())) {
+            User user = getEditedEntity();
+
+            user.setUsername(multitenancyUiSupport.getUsernameByTenant(user.getUsername(), user.getTenant()));
+        }
+    }
+    
+    
 }

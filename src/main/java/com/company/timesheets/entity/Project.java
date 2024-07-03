@@ -3,11 +3,13 @@ package com.company.timesheets.entity;
 import io.jmix.core.DeletePolicy;
 import io.jmix.core.annotation.DeletedBy;
 import io.jmix.core.annotation.DeletedDate;
+import io.jmix.core.annotation.TenantId;
 import io.jmix.core.entity.annotation.JmixGeneratedValue;
 import io.jmix.core.entity.annotation.OnDelete;
 import io.jmix.core.metamodel.annotation.Composition;
 import io.jmix.core.metamodel.annotation.InstanceName;
 import io.jmix.core.metamodel.annotation.JmixEntity;
+import io.jmix.multitenancy.core.AcceptsTenant;
 import jakarta.annotation.PostConstruct;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
@@ -22,11 +24,15 @@ import java.util.UUID;
         @Index(name = "IDX_TS_PROJECT_UNQ", columnList = "NAME", unique = true)
 })
 @Entity(name = "ts_Project")
-public class Project {
+public class Project implements AcceptsTenant {
     @JmixGeneratedValue
     @Column(name = "ID", nullable = false)
     @Id
     private UUID id;
+
+    @TenantId
+    @Column(name = "TENANT")
+    private String tenant;
 
     @InstanceName
     @Column(name = "NAME", nullable = false)
@@ -67,6 +73,14 @@ public class Project {
     @DeletedDate
     @Column(name = "DELETED_DATE")
     private OffsetDateTime deletedDate;
+
+    public String getTenant() {
+        return tenant;
+    }
+
+    public void setTenant(String tenant) {
+        this.tenant = tenant;
+    }
 
     public List<ProjectParticipant> getParticipants() {
         return participants;
@@ -151,5 +165,10 @@ public class Project {
     @PostConstruct
     public void postConstruct() {
         setStatus(ProjectStatus.OPEN);
+    }
+
+    @Override
+    public String getTenantId() {
+        return tenant;
     }
 }

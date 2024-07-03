@@ -2,10 +2,12 @@ package com.company.timesheets.entity;
 
 import io.jmix.core.annotation.DeletedBy;
 import io.jmix.core.annotation.DeletedDate;
+import io.jmix.core.annotation.TenantId;
 import io.jmix.core.entity.annotation.EmbeddedParameters;
 import io.jmix.core.entity.annotation.JmixGeneratedValue;
 import io.jmix.core.metamodel.annotation.InstanceName;
 import io.jmix.core.metamodel.annotation.JmixEntity;
+import io.jmix.multitenancy.core.AcceptsTenant;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 
@@ -17,11 +19,15 @@ import java.util.UUID;
         @Index(name = "IDX_TS_CLIENT_UNQ", columnList = "NAME", unique = true)
 })
 @Entity(name = "ts_Client")
-public class Client {
+public class Client implements AcceptsTenant {
     @JmixGeneratedValue
     @Column(name = "ID", nullable = false)
     @Id
     private UUID id;
+
+    @TenantId
+    @Column(name = "TENANT")
+    private String tenant;
 
     @Column(name = "IMAGE")
     private byte[] image;
@@ -52,6 +58,14 @@ public class Client {
     @DeletedDate
     @Column(name = "DELETED_DATE")
     private OffsetDateTime deletedDate;
+
+    public String getTenant() {
+        return tenant;
+    }
+
+    public void setTenant(String tenant) {
+        this.tenant = tenant;
+    }
 
     public ContactInformation getContactInformation() {
         return contactInformation;
@@ -107,5 +121,10 @@ public class Client {
 
     public void setId(UUID id) {
         this.id = id;
+    }
+
+    @Override
+    public String getTenantId() {
+        return tenant;
     }
 }

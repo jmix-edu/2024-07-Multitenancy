@@ -5,6 +5,8 @@ import com.vaadin.flow.component.login.AbstractLogin.LoginEvent;
 import com.vaadin.flow.component.login.LoginI18n;
 import com.vaadin.flow.i18n.LocaleChangeEvent;
 import com.vaadin.flow.i18n.LocaleChangeObserver;
+import com.vaadin.flow.router.BeforeEnterEvent;
+import com.vaadin.flow.router.Location;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.VaadinSession;
 import io.jmix.core.CoreProperties;
@@ -14,6 +16,7 @@ import io.jmix.flowui.component.loginform.JmixLoginForm;
 import io.jmix.flowui.kit.component.ComponentUtils;
 import io.jmix.flowui.kit.component.loginform.JmixLoginI18n;
 import io.jmix.flowui.view.*;
+import io.jmix.multitenancyflowui.MultitenancyUiSupport;
 import io.jmix.securityflowui.authentication.AuthDetails;
 import io.jmix.securityflowui.authentication.LoginViewSupport;
 import org.apache.commons.lang3.StringUtils;
@@ -52,11 +55,21 @@ public class LoginView extends StandardView implements LocaleChangeObserver {
     @ViewComponent
     private JmixLoginForm login;
 
+    private Location currentLocation;
+
     @Value("${ui.login.defaultUsername:}")
     private String defaultUsername;
 
     @Value("${ui.login.defaultPassword:}")
     private String defaultPassword;
+    @Autowired
+    private MultitenancyUiSupport multitenancyUiSupport;
+
+    @Override
+    public void beforeEnter(BeforeEnterEvent event) {
+        currentLocation = event.getLocation();
+        super.beforeEnter(event);
+    }
 
     @Subscribe
     public void onInit(final InitEvent event) {
@@ -86,9 +99,11 @@ public class LoginView extends StandardView implements LocaleChangeObserver {
 
     @Subscribe("login")
     public void onLogin(final LoginEvent event) {
+        String username = multitenancyUiSupport.getUsernameByLocation(event.getUsername(), currentLocation);
+
         try {
             loginViewSupport.authenticate(
-                    AuthDetails.of(event.getUsername(), event.getPassword())
+                    AuthDetails.of(username, event.getPassword())
                             .withLocale(login.getSelectedLocale())
                             .withRememberMe(login.isRememberMe())
             );
@@ -96,6 +111,17 @@ public class LoginView extends StandardView implements LocaleChangeObserver {
             log.warn("Login failed for user '{}': {}", event.getUsername(), e.toString());
             event.getSource().setError(true);
         }
+
+//        try {
+//            loginViewSupport.authenticate(
+//                    AuthDetails.of(event.getUsername(), event.getPassword())
+//                            .withLocale(login.getSelectedLocale())
+//                            .withRememberMe(login.isRememberMe())
+//            );
+//        } catch (final BadCredentialsException | DisabledException | LockedException | AccessDeniedException e) {
+//            log.warn("Login failed for user '{}': {}", event.getUsername(), e.toString());
+//            event.getSource().setError(true);
+//        }
     }
 
     @Override
